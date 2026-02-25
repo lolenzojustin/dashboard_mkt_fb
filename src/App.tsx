@@ -4,6 +4,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import './index.css';
 import { Marketers, initialMarketers } from './pages/Marketers';
 import { Reports } from './pages/Reports';
+import { db } from './firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { useState } from 'react';
 
 // Layout Component
 const Layout = ({ children }: { children: React.ReactNode }) => {
@@ -102,6 +105,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 // Dashboard Content
 const Dashboard = () => {
+  const [isSeeding, setIsSeeding] = useState(false);
   const activeCampaigns = initialMarketers.flatMap(m => m.campaigns);
 
   const aggregatedStats = activeCampaigns.reduce((acc, c) => {
@@ -120,8 +124,36 @@ const Dashboard = () => {
   const avgCtr = activeCampaigns.reduce((acc, c) => acc + c.ctr, 0) / (activeCampaigns.length || 1);
   const avgFreq = activeCampaigns.reduce((acc, c) => acc + c.freq, 0) / (activeCampaigns.length || 1);
 
+  const seedData = async () => {
+    setIsSeeding(true);
+    try {
+      for (const marketer of initialMarketers) {
+        // Use marketer ID as document ID for easier updates later
+        await setDoc(doc(db, "marketers", marketer.id.toString()), marketer);
+      }
+      alert('Đã đẩy dữ liệu mẫu lên Firebase Firestore thành công!');
+    } catch (error) {
+      console.error("Error adding document: ", error);
+      alert('Lỗi khi đẩy dữ liệu lên Firebase: ' + (error as Error).message);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   return (
     <div className="animate-fade-in">
+      <div className="flex justify-between items-center" style={{ marginBottom: '1.5rem' }}>
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Thống Kê Tổng Quan</h3>
+        <button
+          className="btn btn-primary"
+          onClick={seedData}
+          disabled={isSeeding}
+          style={{ backgroundColor: isSeeding ? 'var(--text-muted)' : 'var(--primary)', opacity: isSeeding ? 0.7 : 1 }}
+        >
+          {isSeeding ? 'Đang tải lên...' : 'Đẩy dữ liệu lên Firebase'}
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" style={{ marginBottom: '2rem' }}>
         <div className="card stat-card">
           <div className="stat-label flex items-center gap-2"><TrendingUp size={16} /> Tổng Chi Tiêu</div>

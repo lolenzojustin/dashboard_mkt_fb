@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Plus, Search, Trash2, TrendingUp, X, ChevronDown, ChevronRight, Edit } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Trash2, TrendingUp, X, ChevronDown, ChevronRight, Edit, Loader2 } from 'lucide-react';
+import { getMarketers, addMarketer, updateMarketer, deleteMarketer } from '../services/marketerService';
 
 export interface Campaign {
     id: string;
@@ -15,7 +16,7 @@ export interface Campaign {
 }
 
 export interface Marketer {
-    id: number;
+    id: string | number;
     name: string;
     email: string;
     status: string;
@@ -59,13 +60,32 @@ export const initialMarketers: Marketer[] = [
 ];
 
 export const Marketers = () => {
-    const [marketers, setMarketers] = useState<Marketer[]>(initialMarketers);
+    const [marketers, setMarketers] = useState<Marketer[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [newForm, setNewForm] = useState({ name: '', email: '' });
-    const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
+    const [editForm, setEditForm] = useState<{ id: string | number, name: string, email: string } | null>(null);
+    const [expandedRows, setExpandedRows] = useState<Record<string | number, boolean>>({});
 
-    const toggleRow = (id: number) => {
+    const fetchMarketers = async () => {
+        setIsLoading(true);
+        try {
+            const data = await getMarketers();
+            setMarketers(data);
+        } catch (error) {
+            console.error("Error fetching marketers:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchMarketers();
+    }, []);
+
+    const toggleRow = (id: string | number) => {
         setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
@@ -74,21 +94,56 @@ export const Marketers = () => {
         m.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleAddSubmit = (e: React.FormEvent) => {
+    const handleAddSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newForm.name || !newForm.email) return;
 
-        const newMarketer: Marketer = {
-            id: Date.now(),
-            name: newForm.name,
-            email: newForm.email,
-            status: 'Hoạt động',
-            campaigns: []
-        };
+        try {
+            const newMarketer = await addMarketer({
+                name: newForm.name,
+                email: newForm.email,
+                status: 'Hoạt động',
+                campaigns: []
+            });
+            setMarketers([...marketers, newMarketer]);
+            setIsAddModalOpen(false);
+            setNewForm({ name: '', email: '' });
+        } catch (error) {
+            alert('Lỗi khi thêm marketer: ' + (error as Error).message);
+        }
+    };
 
-        setMarketers([...marketers, newMarketer]);
-        setIsAddModalOpen(false);
-        setNewForm({ name: '', email: '' });
+    const handleEditClick = (marketer: Marketer) => {
+        setEditForm({ id: marketer.id, name: marketer.name, email: marketer.email });
+        setIsEditModalOpen(true);
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editForm || !editForm.name || !editForm.email) return;
+
+        try {
+            await updateMarketer(editForm.id, {
+                name: editForm.name,
+                email: editForm.email
+            });
+            setMarketers(marketers.map(m => m.id === editForm.id ? { ...m, name: editForm.name, email: editForm.email } : m));
+            setIsEditModalOpen(false);
+            setEditForm(null);
+        } catch (error) {
+            alert('Lỗi khi cập nhật marketer: ' + (error as Error).message);
+        }
+    };
+
+    const handleDelete = async (id: string | number) => {
+        if (!window.confirm("Bạn có chắc chắn muốn xóa marketer này không?")) return;
+
+        try {
+            await deleteMarketer(id);
+            setMarketers(marketers.filter(m => m.id !== id));
+        } catch (error) {
+            alert('Lỗi khi xóa marketer: ' + (error as Error).message);
+        }
     };
 
     const formatCurrency = (value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
@@ -163,7 +218,13 @@ export const Marketers = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredMarketers.map((marketer) => {
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan={9} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                                        <Loader2 className="animate-spin inline-block mr-2" size={20} style={{ verticalAlign: 'middle' }} /> Đang tải dữ liệu...
+                                    </td>
+                                </tr>
+                            ) : filteredMarketers.map((marketer) => {
                                 const agg = calculateAggregated(marketer.campaigns);
                                 const isExpanded = expandedRows[marketer.id];
 
@@ -201,10 +262,10 @@ export const Marketers = () => {
                                             <td>{formatCurrency(agg.cpm)}</td>
                                             <td style={{ textAlign: 'right' }}>
                                                 <div className="flex justify-end gap-2">
-                                                    <button className="btn" style={{ padding: '0.5rem', color: 'var(--text-muted)' }} title="Sửa" onClick={(e) => e.stopPropagation()}>
+                                                    <button className="btn" style={{ padding: '0.5rem', color: 'var(--text-muted)' }} title="Sửa" onClick={(e) => { e.stopPropagation(); handleEditClick(marketer); }}>
                                                         <Edit size={16} />
                                                     </button>
-                                                    <button className="btn" style={{ padding: '0.5rem', color: '#EF4444' }} title="Xóa" onClick={(e) => e.stopPropagation()}>
+                                                    <button className="btn" style={{ padding: '0.5rem', color: '#EF4444' }} title="Xóa" onClick={(e) => { e.stopPropagation(); handleDelete(marketer.id); }}>
                                                         <Trash2 size={16} />
                                                     </button>
                                                 </div>
@@ -331,6 +392,63 @@ export const Marketers = () => {
                                 </button>
                                 <button type="submit" className="btn btn-primary">
                                     Lưu Marketer
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Marketer Modal */}
+            {isEditModalOpen && editForm && (
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <div className="modal-header">
+                            <h3 style={{ fontSize: '1.25rem' }}>Cập Nhật Marketer</h3>
+                            <button
+                                className="btn"
+                                style={{ padding: '0.5rem', color: 'var(--text-muted)' }}
+                                onClick={() => setIsEditModalOpen(false)}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleEditSubmit}>
+                            <div className="modal-body">
+                                <div className="form-group">
+                                    <label className="form-label">Họ và Tên</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="Ví dụ: Nguyễn Văn A"
+                                        value={editForm.name}
+                                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Địa Chỉ Email</label>
+                                    <input
+                                        type="email"
+                                        className="form-input"
+                                        placeholder="Ví dụ: nva@example.com"
+                                        value={editForm.email}
+                                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button
+                                    type="button"
+                                    className="btn"
+                                    style={{ border: '1px solid var(--border)' }}
+                                    onClick={() => setIsEditModalOpen(false)}
+                                >
+                                    Hủy
+                                </button>
+                                <button type="submit" className="btn btn-primary">
+                                    Cập Nhật
                                 </button>
                             </div>
                         </form>
