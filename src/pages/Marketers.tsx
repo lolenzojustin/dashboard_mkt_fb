@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Trash2, TrendingUp, X, ChevronDown, ChevronRight, Edit, Loader2 } from 'lucide-react';
+import { Plus, Search, Trash2, X, ChevronDown, ChevronRight, Edit, Loader2 } from 'lucide-react';
 import { getMarketers, addMarketer, updateMarketer, deleteMarketer } from '../services/marketerService';
 
 export interface Campaign {
@@ -13,6 +13,9 @@ export interface Campaign {
     ctr: number;
     freq: number;
     thruPlay: number;
+    leads: number;
+    orders: number;
+    revenue: number;
 }
 
 export interface Marketer {
@@ -28,33 +31,33 @@ export const initialMarketers: Marketer[] = [
     {
         id: 1, name: 'Nguyen Van A', email: 'nva@example.com', status: 'Active',
         campaigns: [
-            { id: 'C-001', name: 'Spring Sale 2026', spend: 4500, messages: 1200, costPerMsg: 3.75, reach: 450000, cpm: 10.0, ctr: 2.1, freq: 1.2, thruPlay: 12500 }
+            { id: 'C-001', name: 'Spring Sale 2026', spend: 4500, messages: 1200, costPerMsg: 3.75, reach: 450000, cpm: 10.0, ctr: 2.1, freq: 1.2, thruPlay: 12500, leads: 300, orders: 150, revenue: 15000 }
         ]
     },
     {
         id: 2, name: 'Tran Thi B', email: 'ttb@example.com', status: 'Active',
         campaigns: [
-            { id: 'C-002', name: 'Retargeting Cart', spend: 3200, messages: 950, costPerMsg: 3.36, reach: 120000, cpm: 26.6, ctr: 3.5, freq: 2.1, thruPlay: 8400 },
-            { id: 'C-003', name: 'Brand Awareness Q1', spend: 8500, messages: 450, costPerMsg: 18.88, reach: 850000, cpm: 10.0, ctr: 1.1, freq: 1.1, thruPlay: 45000 }
+            { id: 'C-002', name: 'Retargeting Cart', spend: 3200, messages: 950, costPerMsg: 3.36, reach: 120000, cpm: 26.6, ctr: 3.5, freq: 2.1, thruPlay: 8400, leads: 250, orders: 100, revenue: 12000 },
+            { id: 'C-003', name: 'Brand Awareness Q1', spend: 8500, messages: 450, costPerMsg: 18.88, reach: 850000, cpm: 10.0, ctr: 1.1, freq: 1.1, thruPlay: 45000, leads: 50, orders: 10, revenue: 2000 }
         ]
     },
     {
         id: 3, name: 'Hoang To E', email: 'hte@example.com', status: 'Active',
         campaigns: [
-            { id: 'C-004', name: 'Lookalike High LTV', spend: 4100, messages: 680, costPerMsg: 6.02, reach: 145000, cpm: 28.2, ctr: 2.8, freq: 1.4, thruPlay: 15200 }
+            { id: 'C-004', name: 'Lookalike High LTV', spend: 4100, messages: 680, costPerMsg: 6.02, reach: 145000, cpm: 28.2, ctr: 2.8, freq: 1.4, thruPlay: 15200, leads: 180, orders: 90, revenue: 18500 }
         ]
     },
     {
         id: 4, name: 'Le Van C', email: 'lvc@example.com', status: 'Inactive',
         campaigns: [
-            { id: 'C-005', name: 'App Install Asia', spend: 1200, messages: 110, costPerMsg: 10.90, reach: 35000, cpm: 34.2, ctr: 0.9, freq: 1.0, thruPlay: 2100 }
+            { id: 'C-005', name: 'App Install Asia', spend: 1200, messages: 110, costPerMsg: 10.90, reach: 35000, cpm: 34.2, ctr: 0.9, freq: 1.0, thruPlay: 2100, leads: 20, orders: 5, revenue: 800 }
         ]
     },
     {
         id: 5, name: 'Pham Minh D', email: 'pmd@example.com', status: 'Active',
         campaigns: [
-            { id: 'C-006', name: 'Black Friday Teaser', spend: 9500, messages: 2100, costPerMsg: 4.52, reach: 520000, cpm: 18.2, ctr: 4.1, freq: 2.5, thruPlay: 88000 },
-            { id: 'C-007', name: 'Flash Sale Local', spend: 1500, messages: 450, costPerMsg: 3.33, reach: 85000, cpm: 17.6, ctr: 3.8, freq: 1.8, thruPlay: 4500 }
+            { id: 'C-006', name: 'Black Friday Teaser', spend: 9500, messages: 2100, costPerMsg: 4.52, reach: 520000, cpm: 18.2, ctr: 4.1, freq: 2.5, thruPlay: 88000, leads: 600, orders: 350, revenue: 38000 },
+            { id: 'C-007', name: 'Flash Sale Local', spend: 1500, messages: 450, costPerMsg: 3.33, reach: 85000, cpm: 17.6, ctr: 3.8, freq: 1.8, thruPlay: 4500, leads: 120, orders: 80, revenue: 4500 }
         ]
     },
 ];
@@ -150,13 +153,16 @@ export const Marketers = () => {
     const formatNumber = (value: number) => new Intl.NumberFormat('en-US').format(value);
 
     const calculateAggregated = (campaigns: Campaign[]) => {
-        if (!campaigns || campaigns.length === 0) return { spend: 0, messages: 0, costPerMsg: 0, reach: 0, cpm: 0, ctr: 0, freq: 0, thruPlay: 0 };
-        const spend = campaigns.reduce((acc, c) => acc + c.spend, 0);
-        const messages = campaigns.reduce((acc, c) => acc + c.messages, 0);
-        const reach = campaigns.reduce((acc, c) => acc + c.reach, 0);
-        const thruPlay = campaigns.reduce((acc, c) => acc + c.thruPlay, 0);
+        if (!campaigns || campaigns.length === 0) return { spend: 0, messages: 0, costPerMsg: 0, reach: 0, cpm: 0, ctr: 0, freq: 0, thruPlay: 0, leads: 0, orders: 0, revenue: 0 };
+        const spend = campaigns.reduce((acc, c) => acc + (c.spend || 0), 0);
+        const messages = campaigns.reduce((acc, c) => acc + (c.messages || 0), 0);
+        const reach = campaigns.reduce((acc, c) => acc + (c.reach || 0), 0);
+        const thruPlay = campaigns.reduce((acc, c) => acc + (c.thruPlay || 0), 0);
+        const leads = campaigns.reduce((acc, c) => acc + (c.leads || 0), 0);
+        const orders = campaigns.reduce((acc, c) => acc + (c.orders || 0), 0);
+        const revenue = campaigns.reduce((acc, c) => acc + (c.revenue || 0), 0);
         return {
-            spend, messages, reach, thruPlay,
+            spend, messages, reach, thruPlay, leads, orders, revenue,
             costPerMsg: messages > 0 ? spend / messages : 0,
             cpm: reach > 0 ? (spend / reach) * 1000 : 0
         };
@@ -208,12 +214,13 @@ export const Marketers = () => {
                             <tr>
                                 <th style={{ width: '40px' }}></th>
                                 <th>Marketer</th>
-                                <th>Trạng thái</th>
                                 <th>Tổng Chi Tiêu</th>
-                                <th>Tin Nhắn</th>
-                                <th>Phí/Tin</th>
-                                <th>Tiếp cận</th>
-                                <th>CPM</th>
+                                <th>Chi Tiêu/Leads/Mess</th>
+                                <th>Đơn/Doanh Thu</th>
+                                <th>ROAS</th>
+                                <th>Tỉ lệ ra Lead</th>
+                                <th>Giá/Mess/Lead/Đơn</th>
+                                <th>Tiếp cận (CPM)</th>
                                 <th style={{ textAlign: 'right' }}>Hành động</th>
                             </tr>
                         </thead>
@@ -240,26 +247,44 @@ export const Marketers = () => {
                                                         {marketer.name.charAt(0)}
                                                     </div>
                                                     <div>
-                                                        <div style={{ fontWeight: '500', color: 'var(--text-main)' }}>{marketer.name}</div>
+                                                        <div style={{ fontWeight: '500', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                            {marketer.name}
+                                                            <span className={`badge ${marketer.status === 'Active' || marketer.status === 'Hoạt động' ? 'badge-green' : 'badge-gray'}`} style={{ padding: '0.1rem 0.4rem', fontSize: '0.7rem' }}>
+                                                                {marketer.status === 'Active' || marketer.status === 'Hoạt động' ? 'Active' : 'Inactive'}
+                                                            </span>
+                                                        </div>
                                                         <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{marketer.email}</div>
                                                     </div>
                                                 </div>
                                             </td>
+                                            <td style={{ fontWeight: '600', color: 'var(--primary)' }}>{formatCurrency(agg.spend)}</td>
                                             <td>
-                                                <span className={`badge ${marketer.status === 'Hoạt động' ? 'badge-green' : 'badge-gray'}`}>
-                                                    {marketer.status}
+                                                <div style={{ fontSize: '0.875rem' }}><span style={{ color: 'var(--text-muted)' }}>M:</span> {formatNumber(agg.messages)}</div>
+                                                <div style={{ fontSize: '0.875rem' }}><span style={{ color: 'var(--text-muted)' }}>L:</span> {formatNumber(agg.leads)}</div>
+                                            </td>
+                                            <td>
+                                                <div style={{ fontSize: '0.875rem', fontWeight: '500' }}>{formatNumber(agg.orders)} đơn</div>
+                                                <div style={{ fontSize: '0.875rem', color: '#10B981', fontWeight: '500' }}>{formatCurrency(agg.revenue)}</div>
+                                            </td>
+                                            <td>
+                                                <span style={{ fontWeight: '600', color: agg.spend > 0 && (agg.revenue / agg.spend) > 2 ? '#10B981' : 'inherit' }}>
+                                                    {agg.spend > 0 ? (agg.revenue / agg.spend).toFixed(2) : '0.00'}x
                                                 </span>
                                             </td>
-                                            <td style={{ fontWeight: '500' }}>{formatCurrency(agg.spend)}</td>
-                                            <td>{formatNumber(agg.messages)}</td>
                                             <td>
-                                                <div className="flex items-center gap-2">
-                                                    <span>{formatCurrency(agg.costPerMsg)}</span>
-                                                    {agg.costPerMsg < 5 && <TrendingUp size={14} style={{ color: 'var(--secondary)' }} />}
-                                                </div>
+                                                <span className="badge" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+                                                    {agg.messages > 0 ? ((agg.leads / agg.messages) * 100).toFixed(1) : '0.0'}%
+                                                </span>
                                             </td>
-                                            <td>{formatNumber(agg.reach)}</td>
-                                            <td>{formatCurrency(agg.cpm)}</td>
+                                            <td>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>M: <span style={{ color: 'var(--text-main)' }}>{formatCurrency(agg.costPerMsg)}</span></div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>L: <span style={{ color: 'var(--text-main)' }}>{agg.leads > 0 ? formatCurrency(agg.spend / agg.leads) : '$0'}</span></div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>O: <span style={{ color: 'var(--text-main)' }}>{agg.orders > 0 ? formatCurrency(agg.spend / agg.orders) : '$0'}</span></div>
+                                            </td>
+                                            <td>
+                                                <div style={{ fontSize: '0.875rem' }}>{formatNumber(agg.reach)} <span style={{ color: 'var(--text-muted)' }}>người</span></div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>CPM: {formatCurrency(agg.cpm)}</div>
+                                            </td>
                                             <td style={{ textAlign: 'right' }}>
                                                 <div className="flex justify-end gap-2">
                                                     <button className="btn" style={{ padding: '0.5rem', color: 'var(--text-muted)' }} title="Sửa" onClick={(e) => { e.stopPropagation(); handleEditClick(marketer); }}>
@@ -289,13 +314,11 @@ export const Marketers = () => {
                                                                         <tr>
                                                                             <th style={{ fontSize: '0.75rem', padding: '0.75rem 1rem' }}>Tên Chiến Dịch</th>
                                                                             <th style={{ fontSize: '0.75rem', padding: '0.75rem 1rem' }}>Chi Tiêu</th>
-                                                                            <th style={{ fontSize: '0.75rem', padding: '0.75rem 1rem' }}>Tin Nhắn</th>
-                                                                            <th style={{ fontSize: '0.75rem', padding: '0.75rem 1rem' }}>Phí/Tin</th>
-                                                                            <th style={{ fontSize: '0.75rem', padding: '0.75rem 1rem' }}>Tiếp Cận</th>
-                                                                            <th style={{ fontSize: '0.75rem', padding: '0.75rem 1rem' }}>CPM</th>
-                                                                            <th style={{ fontSize: '0.75rem', padding: '0.75rem 1rem' }}>CTR</th>
-                                                                            <th style={{ fontSize: '0.75rem', padding: '0.75rem 1rem' }}>Tần Suất</th>
-                                                                            <th style={{ fontSize: '0.75rem', padding: '0.75rem 1rem' }}>ThruPlay</th>
+                                                                            <th style={{ fontSize: '0.75rem', padding: '0.75rem 1rem' }}>Mess / Leads</th>
+                                                                            <th style={{ fontSize: '0.75rem', padding: '0.75rem 1rem' }}>Đơn / Doanh Thu</th>
+                                                                            <th style={{ fontSize: '0.75rem', padding: '0.75rem 1rem' }}>ROAS</th>
+                                                                            <th style={{ fontSize: '0.75rem', padding: '0.75rem 1rem' }}>Phí/Tin/Lead/Đơn</th>
+                                                                            <th style={{ fontSize: '0.75rem', padding: '0.75rem 1rem' }}>Tiếp Cận (CPM)</th>
                                                                         </tr>
                                                                     </thead>
                                                                     <tbody>
@@ -305,14 +328,27 @@ export const Marketers = () => {
                                                                                     <div style={{ fontWeight: '500', color: 'var(--text-main)', fontSize: '0.875rem' }}>{c.name}</div>
                                                                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.id}</div>
                                                                                 </td>
-                                                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}>{formatCurrency(c.spend)}</td>
-                                                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}>{formatNumber(c.messages)}</td>
-                                                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}>{formatCurrency(c.costPerMsg)}</td>
-                                                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}>{formatNumber(c.reach)}</td>
-                                                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}>{formatCurrency(c.cpm)}</td>
-                                                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}>{c.ctr.toFixed(2)}%</td>
-                                                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}>{c.freq.toFixed(2)}</td>
-                                                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}>{formatNumber(c.thruPlay)}</td>
+                                                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', fontWeight: '500', color: 'var(--primary)' }}>{formatCurrency(c.spend || 0)}</td>
+                                                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}>
+                                                                                    <div>M: {formatNumber(c.messages || 0)}</div>
+                                                                                    <div style={{ color: 'var(--text-muted)' }}>L: {formatNumber(c.leads || 0)} <span style={{ fontSize: '0.7rem' }}>({c.messages > 0 ? ((c.leads || 0) / c.messages * 100).toFixed(0) : 0}%)</span></div>
+                                                                                </td>
+                                                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem' }}>
+                                                                                    <div>{formatNumber(c.orders || 0)} đơn</div>
+                                                                                    <div style={{ color: '#10B981', fontWeight: '500' }}>{formatCurrency(c.revenue || 0)}</div>
+                                                                                </td>
+                                                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                                                                                    {c.spend > 0 ? ((c.revenue || 0) / c.spend).toFixed(2) : '0.00'}x
+                                                                                </td>
+                                                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                                                                    <div>M: {formatCurrency(c.costPerMsg || 0)}</div>
+                                                                                    <div>L: {c.leads > 0 ? formatCurrency((c.spend || 0) / c.leads) : '$0'}</div>
+                                                                                    <div>O: {c.orders > 0 ? formatCurrency((c.spend || 0) / c.orders) : '$0'}</div>
+                                                                                </td>
+                                                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.75rem' }}>
+                                                                                    <div>{formatNumber(c.reach || 0)}</div>
+                                                                                    <div style={{ color: 'var(--text-muted)' }}>CPM: {formatCurrency(c.cpm || 0)}</div>
+                                                                                </td>
                                                                             </tr>
                                                                         ))}
                                                                     </tbody>

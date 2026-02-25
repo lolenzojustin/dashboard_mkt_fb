@@ -72,13 +72,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
 // Mock data for charts
 const performanceData = [
-  { name: 'Mon', spend: 450, messages: 240, costPerMsg: 1.87, reach: 45000, cpm: 10.0, ctr: 1.8, freq: 1.2, thruPlay: 2100 },
-  { name: 'Tue', spend: 520, messages: 290, costPerMsg: 1.79, reach: 52000, cpm: 10.0, ctr: 2.1, freq: 1.3, thruPlay: 2400 },
-  { name: 'Wed', spend: 610, messages: 380, costPerMsg: 1.60, reach: 68000, cpm: 8.97, ctr: 2.5, freq: 1.4, thruPlay: 3100 },
-  { name: 'Thu', spend: 730, messages: 450, costPerMsg: 1.62, reach: 75000, cpm: 9.73, ctr: 2.3, freq: 1.5, thruPlay: 3500 },
-  { name: 'Fri', spend: 810, messages: 520, costPerMsg: 1.55, reach: 88000, cpm: 9.20, ctr: 2.7, freq: 1.6, thruPlay: 4200 },
-  { name: 'Sat', spend: 950, messages: 680, costPerMsg: 1.39, reach: 110000, cpm: 8.63, ctr: 3.2, freq: 1.8, thruPlay: 5100 },
-  { name: 'Sun', spend: 1100, messages: 820, costPerMsg: 1.34, reach: 135000, cpm: 8.14, ctr: 3.5, freq: 1.9, thruPlay: 6300 },
+  { name: 'Mon', spend: 450, messages: 240, costPerMsg: 1.87, reach: 45000, cpm: 10.0, ctr: 1.8, freq: 1.2, thruPlay: 2100, leads: 50, orders: 20, revenue: 2000 },
+  { name: 'Tue', spend: 520, messages: 290, costPerMsg: 1.79, reach: 52000, cpm: 10.0, ctr: 2.1, freq: 1.3, thruPlay: 2400, leads: 65, orders: 25, revenue: 2500 },
+  { name: 'Wed', spend: 610, messages: 380, costPerMsg: 1.60, reach: 68000, cpm: 8.97, ctr: 2.5, freq: 1.4, thruPlay: 3100, leads: 90, orders: 35, revenue: 3500 },
+  { name: 'Thu', spend: 730, messages: 450, costPerMsg: 1.62, reach: 75000, cpm: 9.73, ctr: 2.3, freq: 1.5, thruPlay: 3500, leads: 105, orders: 40, revenue: 4000 },
+  { name: 'Fri', spend: 810, messages: 520, costPerMsg: 1.55, reach: 88000, cpm: 9.20, ctr: 2.7, freq: 1.6, thruPlay: 4200, leads: 130, orders: 55, revenue: 5500 },
+  { name: 'Sat', spend: 950, messages: 680, costPerMsg: 1.39, reach: 110000, cpm: 8.63, ctr: 3.2, freq: 1.8, thruPlay: 5100, leads: 175, orders: 75, revenue: 7500 },
+  { name: 'Sun', spend: 1100, messages: 820, costPerMsg: 1.34, reach: 135000, cpm: 8.14, ctr: 3.5, freq: 1.9, thruPlay: 6300, leads: 220, orders: 95, revenue: 9500 },
 ];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -88,13 +88,15 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <div style={{ backgroundColor: 'var(--surface)', padding: '1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', minWidth: '200px' }}>
         <p style={{ fontWeight: '600', marginBottom: '0.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>{label}</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.875rem' }}>
+          <div><span style={{ color: 'var(--text-muted)' }}>Doanh thu:</span> ${data.revenue}</div>
+          <div><span style={{ color: 'var(--text-muted)' }}>Đơn hàng:</span> {data.orders}</div>
+          <div><span style={{ color: 'var(--text-muted)' }}>Số ĐT (Leads):</span> {data.leads}</div>
           <div><span style={{ color: 'var(--text-muted)' }}>Chi tiêu:</span> ${data.spend}</div>
           <div><span style={{ color: 'var(--text-muted)' }}>Tin nhắn:</span> {data.messages}</div>
           <div><span style={{ color: 'var(--text-muted)' }}>Phí/Tin:</span> ${data.costPerMsg}</div>
           <div><span style={{ color: 'var(--text-muted)' }}>Tiếp cận:</span> {(data.reach / 1000).toFixed(1)}k</div>
           <div><span style={{ color: 'var(--text-muted)' }}>CPM:</span> ${data.cpm}</div>
           <div><span style={{ color: 'var(--text-muted)' }}>CTR:</span> {data.ctr}%</div>
-          <div><span style={{ color: 'var(--text-muted)' }}>Tần suất:</span> {data.freq}</div>
           <div><span style={{ color: 'var(--text-muted)' }}>ThruPlay:</span> {data.thruPlay}</div>
         </div>
       </div>
@@ -109,17 +111,22 @@ const Dashboard = () => {
   const activeCampaigns = initialMarketers.flatMap(m => m.campaigns);
 
   const aggregatedStats = activeCampaigns.reduce((acc, c) => {
-    acc.spend += c.spend;
-    acc.messages += c.messages;
-    acc.reach += c.reach;
-    acc.thruPlay += c.thruPlay;
+    acc.spend += c.spend || 0;
+    acc.messages += c.messages || 0;
+    acc.reach += c.reach || 0;
+    acc.thruPlay += c.thruPlay || 0;
+    acc.leads += c.leads || 0;
+    acc.orders += c.orders || 0;
+    acc.revenue += c.revenue || 0;
     return acc;
-  }, { spend: 0, messages: 0, reach: 0, thruPlay: 0 });
+  }, { spend: 0, messages: 0, reach: 0, thruPlay: 0, leads: 0, orders: 0, revenue: 0 });
 
   const formatCurrency = (value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
   const formatNumber = (value: number) => new Intl.NumberFormat('en-US').format(value);
 
-  const costPerMsg = aggregatedStats.messages > 0 ? aggregatedStats.spend / aggregatedStats.messages : 0;
+  const leadRate = aggregatedStats.messages > 0 ? (aggregatedStats.leads / aggregatedStats.messages) * 100 : 0;
+  const roas = aggregatedStats.spend > 0 ? aggregatedStats.revenue / aggregatedStats.spend : 0;
+
   const cpm = aggregatedStats.reach > 0 ? (aggregatedStats.spend / aggregatedStats.reach) * 1000 : 0;
   const avgCtr = activeCampaigns.reduce((acc, c) => acc + c.ctr, 0) / (activeCampaigns.length || 1);
   const avgFreq = activeCampaigns.reduce((acc, c) => acc + c.freq, 0) / (activeCampaigns.length || 1);
@@ -156,24 +163,32 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" style={{ marginBottom: '2rem' }}>
         <div className="card stat-card">
-          <div className="stat-label flex items-center gap-2"><TrendingUp size={16} /> Tổng Chi Tiêu</div>
+          <div className="stat-label flex items-center gap-2"><TrendingUp size={16} /> Doanh Thu</div>
+          <div className="stat-value" style={{ color: 'var(--primary)' }}>{formatCurrency(aggregatedStats.revenue)}</div>
+          <div className="stat-change positive"><span>+24.5% sv tháng trước</span></div>
+        </div>
+        <div className="card stat-card">
+          <div className="stat-label flex items-center gap-2"><Bell size={16} /> Số ĐT (Leads)</div>
+          <div className="stat-value">{formatNumber(aggregatedStats.leads)}</div>
+          <div className="stat-change positive"><span>Tỉ lệ: {leadRate.toFixed(1)}%</span></div>
+        </div>
+        <div className="card stat-card">
+          <div className="stat-label flex items-center gap-2"><BarChart3 size={16} /> Đơn Hàng</div>
+          <div className="stat-value">{formatNumber(aggregatedStats.orders)}</div>
+          <div className="stat-change positive"><span>+12.4% sv tháng trước</span></div>
+        </div>
+        <div className="card stat-card">
+          <div className="stat-label flex items-center gap-2"><Users size={16} /> ROAS</div>
+          <div className="stat-value">{roas.toFixed(2)}x</div>
+          <div className="stat-change positive"><span>+0.2x sv tháng trước</span></div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" style={{ marginBottom: '2rem' }}>
+        <div className="card stat-card">
+          <div className="stat-label flex items-center gap-2">Tổng Chi Tiêu</div>
           <div className="stat-value">{formatCurrency(aggregatedStats.spend)}</div>
           <div className="stat-change positive"><span>+14.5% sv tháng trước</span></div>
-        </div>
-        <div className="card stat-card">
-          <div className="stat-label flex items-center gap-2"><Bell size={16} /> Số Tin Nhắn</div>
-          <div className="stat-value">{formatNumber(aggregatedStats.messages)}</div>
-          <div className="stat-change positive"><span>+22.1% sv tháng trước</span></div>
-        </div>
-        <div className="card stat-card">
-          <div className="stat-label flex items-center gap-2"><BarChart3 size={16} /> Chi Phí / Tin Nhắn</div>
-          <div className="stat-value">{formatCurrency(costPerMsg)}</div>
-          <div className="stat-change positive"><span>-12.4% sv tháng trước</span></div>
-        </div>
-        <div className="card stat-card">
-          <div className="stat-label flex items-center gap-2"><Users size={16} /> Tổng Tiếp Cận</div>
-          <div className="stat-value">{formatNumber(aggregatedStats.reach)}</div>
-          <div className="stat-change positive"><span>+8.2% sv tháng trước</span></div>
         </div>
 
         {/* New 4 Cards */}
@@ -216,9 +231,9 @@ const Dashboard = () => {
               <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)' }} dx={10} />
               <RechartsTooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ paddingTop: '20px' }} />
+              <Line yAxisId="left" type="monotone" dataKey="revenue" name="Doanh Thu ($)" stroke="#10B981" strokeWidth={3} dot={{ r: 4, fill: 'var(--surface)', strokeWidth: 2 }} activeDot={{ r: 6 }} />
               <Line yAxisId="left" type="monotone" dataKey="spend" name="Chi Tiêu ($)" stroke="var(--primary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--surface)', strokeWidth: 2 }} activeDot={{ r: 6 }} />
-              <Line yAxisId="right" type="monotone" dataKey="messages" name="Tin Nhắn" stroke="var(--secondary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--surface)', strokeWidth: 2 }} activeDot={{ r: 6 }} />
-              <Line yAxisId="right" type="monotone" dataKey="thruPlay" name="ThruPlay" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4, fill: 'var(--surface)', strokeWidth: 2 }} activeDot={{ r: 6 }} />
+              <Line yAxisId="right" type="monotone" dataKey="leads" name="Leads" stroke="var(--secondary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--surface)', strokeWidth: 2 }} activeDot={{ r: 6 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
